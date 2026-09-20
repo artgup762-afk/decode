@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.config;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -17,6 +17,16 @@ public final class ConfigLoader {
       "/org/firstinspires/ftc/teamcode/robot/config/config.yaml";
 
   private static Map<String, Object> config = new HashMap<>();
+
+  /**
+   * Preserve the Pedro 2 field-reflection behavior for the team's YAML mirror signals.
+   * Pedro 3's Pose has no mirror() method. Reflection is across the 141.5-inch field X axis:
+   * x -> 141.5 - x, y unchanged, heading -> pi - heading (normalized by Pose).
+   * Do not replace this with PoseFactory.mirrorX(), which uses a different heading transform.
+   */
+  public static Pose mirrorPose(Pose pose) {
+    return new Pose(141.5 - pose.x(), pose.y(), Math.PI - pose.heading());
+  }
 
   static {
     reload();
@@ -358,7 +368,7 @@ public final class ConfigLoader {
       Pose pose = (Pose) coerce(baseVal, Pose.class);
       if (pose != null) {
         if (shouldMirrorPose) {
-          pose = pose.mirror();
+          pose = mirrorPose(pose);
         }
         if (expr.isEmpty()) {
           return pose;
@@ -367,15 +377,15 @@ public final class ConfigLoader {
         String operandStr = expr.substring(1).trim();
         try {
           double operand = Double.parseDouble(operandStr);
-          double nx = pose.getX();
-          double ny = pose.getY();
+          double nx = pose.x();
+          double ny = pose.y();
           switch (op) {
             case '+': nx += operand; ny += operand; break;
             case '-': nx -= operand; ny -= operand; break;
             case '*': nx *= operand; ny *= operand; break;
             case '/': if (operand != 0) { nx /= operand; ny /= operand; } break;
           }
-          return new Pose(nx, ny, pose.getHeading());
+          return new Pose(nx, ny, pose.heading());
         } catch (NumberFormatException e) {
           return pose;
         }
@@ -565,7 +575,7 @@ public final class ConfigLoader {
                   if (rawMirrorVal != null && !isMirrorSignal(rawMirrorVal)) {
                     if (field.getType() == Pose.class || (rawMirrorVal instanceof List && ((List<?>) rawMirrorVal).size() == 3)) {
                       Pose basePose = (Pose) coerce(rawMirrorVal, Pose.class);
-                      resolved = basePose != null ? basePose.mirror() : null;
+                      resolved = basePose != null ? mirrorPose(basePose) : null;
                     } else {
                       resolved = coerce(rawMirrorVal, field.getType());
                     }
@@ -616,32 +626,27 @@ public final class ConfigLoader {
       double heading = ((Number) Objects.requireNonNull(m.get("heading"))).doubleValue();
       return new Pose(x, y, Math.toRadians(heading));
     }
-    if ((type.getName().equals("com.qualcomm.robotcore.hardware.PIDFCoefficients")
-            || type.getName().equals("com.pedropathing.control.PIDFCoefficients"))
+    if (type.getName().equals("com.qualcomm.robotcore.hardware.PIDFCoefficients")
         && value instanceof Map) {
       Map<String, Object> m = (Map<String, Object>) value;
       double p = m.containsKey("p") ? ((Number) Objects.requireNonNull(m.get("p"))).doubleValue() : 0;
       double i = m.containsKey("i") ? ((Number) Objects.requireNonNull(m.get("i"))).doubleValue() : 0;
       double d = m.containsKey("d") ? ((Number) Objects.requireNonNull(m.get("d"))).doubleValue() : 0;
       double f = m.containsKey("f") ? ((Number) Objects.requireNonNull(m.get("f"))).doubleValue() : 0;
-      if (type.getName().equals("com.qualcomm.robotcore.hardware.PIDFCoefficients")) {
+      try {
+        return Class.forName("com.qualcomm.robotcore.hardware.PIDFCoefficients")
+            .getConstructor(double.class, double.class, double.class, double.class)
+            .newInstance(p, i, d, f);
+      } catch (Exception e1) {
         try {
+          Class<?> algEnum = Class.forName("com.qualcomm.robotcore.hardware.MotorControlAlgorithm");
+          Object defaultAlg = algEnum.getEnumConstants()[0];
           return Class.forName("com.qualcomm.robotcore.hardware.PIDFCoefficients")
-              .getConstructor(double.class, double.class, double.class, double.class)
-              .newInstance(p, i, d, f);
-        } catch (Exception e1) {
-          try {
-            Class<?> algEnum = Class.forName("com.qualcomm.robotcore.hardware.MotorControlAlgorithm");
-            Object defaultAlg = algEnum.getEnumConstants()[0];
-            return Class.forName("com.qualcomm.robotcore.hardware.PIDFCoefficients")
-                .getConstructor(double.class, double.class, double.class, double.class, algEnum)
-                .newInstance(p, i, d, f, defaultAlg);
-          } catch (Exception e2) {
-            throw new RuntimeException("Failed to instantiate com.qualcomm.robotcore.hardware.PIDFCoefficients", e1);
-          }
+              .getConstructor(double.class, double.class, double.class, double.class, algEnum)
+              .newInstance(p, i, d, f, defaultAlg);
+        } catch (Exception e2) {
+          throw new RuntimeException("Failed to instantiate com.qualcomm.robotcore.hardware.PIDFCoefficients", e1);
         }
-      } else {
-        return new com.pedropathing.control.PIDFCoefficients(p, i, d, f);
       }
     }
     if (type == double.class || type == Double.class) {

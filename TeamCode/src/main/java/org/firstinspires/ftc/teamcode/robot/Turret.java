@@ -1,9 +1,7 @@
 package org.firstinspires.ftc.teamcode.robot;
 
-import com.pedropathing.control.PIDFCoefficients;
-import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -11,6 +9,8 @@ import java.util.Locale;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.robot.config.generated.config;
+import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFCoefficients;
+import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFController;
 
 public class Turret {
   public static final double OFFSET_CONST = 260.0;
@@ -50,7 +50,7 @@ public class Turret {
   private double manualPower = 0.0;
 
   public Turret(HardwareMap hardwareMap, Telemetry telemetry, Follower follower) {
-    this(hardwareMap, telemetry, follower::getPose);
+    this(hardwareMap, telemetry, follower::pose);
   }
 
   public Turret(HardwareMap hardwareMap, Telemetry telemetry) {
@@ -501,7 +501,7 @@ public class Turret {
     }
 
     if (telemetry != null) {
-      telemetry.addData("Robot Heading", Math.toDegrees(currentPose.getHeading()));
+      telemetry.addData("Robot Heading", Math.toDegrees(currentPose.heading()));
       telemetry.addData("Target Relative", relativeTargetAngle);
       telemetry.addData("Turret Relative", relativeTurretAngle);
       telemetry.addData("Turret Power", turnServo != null ? turnServo.getPower() : 0.0);
@@ -519,7 +519,7 @@ public class Turret {
   }
 
   private double distanceToGoal(Pose currentPose) {
-    return Math.hypot(goalX - currentPose.getX(), goalY - currentPose.getY());
+    return Math.hypot(goalX - currentPose.x(), goalY - currentPose.y());
   }
 
   public double getTargetTurnAngle() {
@@ -580,11 +580,11 @@ public class Turret {
           if (!Double.isNaN(targetAzimuthRad)) {
             worldBearingDegrees = Math.toDegrees(targetAzimuthRad);
           } else {
-            double deltaX = goalX - pose.getX();
-            double deltaY = goalY - pose.getY();
+            double deltaX = goalX - pose.x();
+            double deltaY = goalY - pose.y();
             worldBearingDegrees = Math.toDegrees(Math.atan2(deltaY, deltaX));
           }
-          double robotWorldHeadingDegrees = Math.toDegrees(pose.getHeading());
+          double robotWorldHeadingDegrees = Math.toDegrees(pose.heading());
           setTargetTurnAngle(
               AngleUnit.normalizeDegrees(worldBearingDegrees - robotWorldHeadingDegrees));
           updateTurret(pose);

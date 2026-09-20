@@ -1,14 +1,15 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.control.PIDFController;
-import com.pedropathing.control.PredictiveBrakingController;
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.pedropathing.math.Vector;
-import com.pedropathing.util.NanoTimer;
+import com.pedropathing.math.Vector2D;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.LegacyPedro2Calibration;
 import org.firstinspires.ftc.teamcode.robot.config.generated.config;
+import org.firstinspires.ftc.teamcode.utilities.legacy.NanoTimer;
+import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFController;
+import org.firstinspires.ftc.teamcode.utilities.legacy.PredictiveBrakingController;
 import org.locationtech.jts.geom.Envelope;
 
 @Configurable
@@ -159,7 +160,7 @@ public class Casablanca {
     headingLockErrorDeadbandRad = Math.toRadians(hl.error_deadband_deg);
     headingLockSettleRateRad = Math.toRadians(hl.settle_rate_dps);
 
-    this.headingPidf = new PIDFController(Constants.followerConstants.getCoefficientsHeadingPIDF());
+    this.headingPidf = new PIDFController(LegacyPedro2Calibration.headingPidf());
 
     performBrakingSanityCheck();
 
@@ -168,9 +169,9 @@ public class Casablanca {
 
   private void performBrakingSanityCheck() {
     PredictiveBrakingController controller =
-        new PredictiveBrakingController(Constants.followerConstants.predictiveBrakingCoefficients);
-    double maxVelX = Constants.driveConstants.xVelocity;
-    double maxVelY = Constants.driveConstants.yVelocity;
+        new PredictiveBrakingController(LegacyPedro2Calibration.brakingCoefficients());
+    double maxVelX = LegacyPedro2Calibration.MAX_FORWARD_VELOCITY_INCHES_PER_SECOND;
+    double maxVelY = LegacyPedro2Calibration.MAX_STRAFE_VELOCITY_INCHES_PER_SECOND;
     double minBrakingX =
         Math.abs(controller.computeBrakingDisplacement(maxVelX, 1.0)) / decelSafetyFactor;
     double minBrakingY =
@@ -245,14 +246,11 @@ public class Casablanca {
     if (!Double.isFinite(currentAngularVelocity)) {
       currentAngularVelocity = 0.0;
     }
-    if (!Double.isFinite(currentVelocity.getXComponent())
-        || !Double.isFinite(currentVelocity.getYComponent())) {
-      currentVelocity = new Vector();
+    if (!Double.isFinite(currentVelocity.get(0)) || !Double.isFinite(currentVelocity.get(1))) {
+      currentVelocity = new Vector(0, 0);
     }
     boolean poseFinite =
-        Double.isFinite(pose.getX())
-            && Double.isFinite(pose.getY())
-            && Double.isFinite(pose.getHeading());
+        Double.isFinite(pose.x()) && Double.isFinite(pose.y()) && Double.isFinite(pose.heading());
 
     lastPoseUntrusted = !poseFinite;
     if (!poseFinite) {
@@ -264,11 +262,10 @@ public class Casablanca {
     }
 
     if (fieldCentric) {
-      Vector stick = new Vector();
-      stick.setOrthogonalComponents(forward, strafe);
-      stick.rotateVector(fieldCentricOffsetRad - pose.getHeading());
-      forward = stick.getXComponent();
-      strafe = stick.getYComponent();
+      Vector2D stick =
+          Vector2D.cartesian(forward, strafe).rotate(fieldCentricOffsetRad - pose.heading());
+      forward = stick.x();
+      strafe = stick.y();
     }
 
     if (enableFrictionComp) {
@@ -290,13 +287,13 @@ public class Casablanca {
     if (armedAimActive || goalLockActive || enableHeadingLock && stickReleased) {
       if (!headingLockInitialized) {
         if (Math.abs(currentAngularVelocity) < headingLockSettleRateRad) {
-          targetHeading = pose.getHeading();
+          targetHeading = pose.heading();
           headingLockInitialized = true;
           headingPidf.reset();
         }
         turn = 0.0;
       } else {
-        double headingError = AngleUnit.normalizeRadians(targetHeading - pose.getHeading());
+        double headingError = AngleUnit.normalizeRadians(targetHeading - pose.heading());
 
         if (Math.abs(headingError) < headingLockErrorDeadbandRad) {
           headingPidf.reset();
@@ -305,7 +302,7 @@ public class Casablanca {
           headingPidf.updateFeedForwardInput(Math.signum(headingError));
           headingPidf.updateError(headingError);
 
-          double speedMag = currentVelocity.getMagnitude();
+          double speedMag = currentVelocity.magnitude();
           double speedRatio = Math.clamp(speedMag / headingLockMovingSpeedThreshold, 0.0, 1.0);
           double ks = frictionRot + speedRatio * (headingLockKsMoving - frictionRot);
 
@@ -336,19 +333,15 @@ public class Casablanca {
       turn = currentTurn;
     }
 
-    Vector inputRobot = new Vector();
-    inputRobot.setOrthogonalComponents(forward, strafe);
-
-    Vector inputField = inputRobot.copy();
-    inputField.rotateVector(pose.getHeading());
-    double adjFieldX = inputField.getXComponent();
-    double adjFieldY = inputField.getYComponent();
+    Vector2D inputField = Vector2D.cartesian(forward, strafe).rotate(pose.heading());
+    double adjFieldX = inputField.x();
+    double adjFieldY = inputField.y();
 
     Envelope robotBounds = sentinel.getRobotBounds(pose);
     Envelope protectedZone = sentinel.getProtectedZone();
 
-    double currentVelX = currentVelocity.getXComponent();
-    double currentVelY = currentVelocity.getYComponent();
+    double currentVelX = currentVelocity.get(0);
+    double currentVelY = currentVelocity.get(1);
 
     double laneFadeY =
         calculateLaneFade(
@@ -418,16 +411,15 @@ public class Casablanca {
     lastLookaheadRad = lookaheadRad;
     lastAngularVelocityUsed = currentAngularVelocity;
     boolean rotationSafe =
-            Double.isFinite(turn) && Double.isFinite(lookaheadRad) && sentinel.isRotationSafe(pose, turn, lookaheadRad);
+        Double.isFinite(turn)
+            && Double.isFinite(lookaheadRad)
+            && sentinel.isRotationSafe(pose, turn, lookaheadRad);
     lastRotationSafe = rotationSafe;
     if (turn != 0 && !rotationSafe) {
       turn = 0;
     }
 
-    Vector adjField = new Vector();
-    adjField.setOrthogonalComponents(adjFieldX, adjFieldY);
-
-    return new double[] {adjField.getYComponent(), adjField.getXComponent(), turn};
+    return new double[] {adjFieldY, adjFieldX, turn};
   }
 
   public static double applyFriction(double input, double kS) {
@@ -502,8 +494,7 @@ public class Casablanca {
     if (Math.abs(currentVel) > 0.2) {
       double brakingRoom = Math.max(0, distToStop - hardStopDist);
       PredictiveBrakingController controller =
-          new PredictiveBrakingController(
-              Constants.followerConstants.predictiveBrakingCoefficients);
+          new PredictiveBrakingController(LegacyPedro2Calibration.brakingCoefficients());
       double predictedBrakingDist =
           Math.abs(controller.computeBrakingDisplacement(currentVel, Math.signum(currentVel)));
 

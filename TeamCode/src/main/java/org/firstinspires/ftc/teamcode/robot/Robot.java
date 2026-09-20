@@ -1,9 +1,7 @@
 package org.firstinspires.ftc.teamcode.robot;
 
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Scheduler;
-import com.pedropathing.math.Vector;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import java.util.List;
@@ -39,7 +37,7 @@ public final class Robot {
 
     intake = new Intake(hardwareMap);
     shooter = new Shooter(hardwareMap);
-    turret = new Turret(hardwareMap, telemetry, follower::getPose);
+    turret = new Turret(hardwareMap, telemetry, follower::pose);
     turret.setGoal(profile.goalX(), profile.goalY());
 
     sentinel = new Sentinel(profile.alliance());
@@ -49,13 +47,8 @@ public final class Robot {
             shooter,
             turret,
             intake,
-            follower::getPose,
-            () -> {
-              Vector v = follower.getVelocity();
-              return v != null
-                  ? new Pose(v.getXComponent(), v.getYComponent(), follower.getAngularVelocity())
-                  : new Pose(0, 0, 0);
-            },
+            follower::pose,
+            follower::velocity,
             casablanca,
             profile.alliance(),
             telemetry);

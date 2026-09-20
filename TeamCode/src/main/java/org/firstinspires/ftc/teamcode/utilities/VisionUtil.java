@@ -1,23 +1,20 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import android.util.Size;
-import com.pedropathing.ftc.InvertedFTCCoordinates;
-import com.pedropathing.ftc.PoseConverter;
-import com.pedropathing.geometry.PedroCoordinates;
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import java.util.List;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.robot.config.generated.config;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.apriltag.AprilTagSingleDetection;
 
 public class VisionUtil {
 
@@ -70,27 +67,34 @@ public class VisionUtil {
     }
 
     Pose newPose = null;
-    for (AprilTagDetection detection : currentDetections) {
-      if (detection != null && detection.metadata != null && detection.robotPose != null) {
+    for (AprilTagDetection candidate : currentDetections) {
+      if (candidate instanceof AprilTagSingleDetection detection
+          && detection.metadata != null
+          && detection.robotPose != null) {
         if (!detection.metadata.name.contains("Obelisk")) {
           tagFound = true;
           double detectedX = detection.robotPose.getPosition().x;
           double detectedY = detection.robotPose.getPosition().y;
           double headingRadians = detection.robotPose.getOrientation().getYaw(AngleUnit.RADIANS);
-          Pose2D visionPose =
-              new Pose2D(
-                  DistanceUnit.INCH, detectedX, detectedY, AngleUnit.RADIANS, headingRadians);
-          Pose pedroPose =
-              PoseConverter.pose2DToPose(visionPose, InvertedFTCCoordinates.INSTANCE)
-                  .getAsCoordinateSystem(PedroCoordinates.INSTANCE);
-          double fieldX = pedroPose.getX() < 0 ? -pedroPose.getX() + 72 : 72 - pedroPose.getX();
-          double fieldY = pedroPose.getY() < 0 ? -pedroPose.getY() + 72 : 72 - pedroPose.getY();
-          newPose = new Pose(fieldX, fieldY, headingRadians);
+          newPose = legacyDetectionToFieldPose(detectedX, detectedY, headingRadians);
           break;
         }
       }
     }
     return newPose;
+  }
+
+  /**
+   * Preserve the exact Pedro 2 InvertedFTCCoordinates -> Pedro -> (72-x, 72-y) conversion. The
+   * Pedro 2 inverted frame transformation was (x, y) -> (72-y, 72+x), so the second transformation
+   * reduces to (y, -x). Heading was passed through unchanged. Inputs have the same inch-unit
+   * assumption as the previous robotPose implementation. Revalidate AprilTag pose semantics, camera
+   * calibration, and field axes on the robot when changing FTC SDK versions. This is NOT a new
+   * vision calibration.
+   */
+  public static Pose legacyDetectionToFieldPose(
+      double detectedX, double detectedY, double headingRadians) {
+    return new Pose(detectedY, -detectedX, headingRadians);
   }
 
   public void resumeStreaming() {

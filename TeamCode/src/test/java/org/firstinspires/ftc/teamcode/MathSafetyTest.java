@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -78,15 +78,15 @@ public class MathSafetyTest {
     // Test alignPose calculates target angles correctly
     // Angle to (10, 0) from (0, 0) should be 0 radians
     Pose pose1 = Turret.alignPose(0, 0, 10, 0);
-    assertEquals(0.0, pose1.getHeading(), 1e-6);
+    assertEquals(0.0, pose1.heading(), 1e-6);
 
     // Angle to (0, 10) from (0, 0) should be PI/2 radians (90 degrees)
     Pose pose2 = Turret.alignPose(0, 0, 0, 10);
-    assertEquals(Math.PI / 2, pose2.getHeading(), 1e-6);
+    assertEquals(Math.PI / 2, pose2.heading(), 1e-6);
 
     // Angle to (-10, 0) from (0, 0) should be PI radians (180 degrees)
     Pose pose3 = Turret.alignPose(0, 0, -10, 0);
-    assertEquals(Math.PI, pose3.getHeading(), 1e-6);
+    assertEquals(Math.PI, pose3.heading(), 1e-6);
   }
 
   @Test
@@ -345,7 +345,7 @@ public class MathSafetyTest {
       Sentinel.ZoneStanding expected =
           spot.insideLaunchZone() ? Sentinel.ZoneStanding.INSIDE : Sentinel.ZoneStanding.OUTSIDE;
       for (double heading = 0; heading < 2 * Math.PI; heading += Math.PI / 8) {
-        Pose rotated = new Pose(parked.getX(), parked.getY(), heading);
+        Pose rotated = new Pose(parked.x(), parked.y(), heading);
         assertEquals(
             side + " endgame spot is not committed at heading " + heading,
             expected,
@@ -366,13 +366,13 @@ public class MathSafetyTest {
       // has to consider going deeper into the zone as well as out of it. The slack is what the
       // heading-blind model deliberately gives away: it plans against the footprint's circumscribed
       // circle, while the check below samples 16 discrete headings of the real square.
-      double spotDistance = score.distanceFrom(parked);
+      double spotDistance = score.distance(parked);
       double slack = margin + 0.5;
       assertTrue(side + " endgame move is implausibly long", spotDistance < 3 * halfDiagonal);
       for (double angle = 0; angle < 2 * Math.PI; angle += Math.PI / 24) {
         for (double r = 0.5; r < spotDistance - slack; r += 0.5) {
-          double cx = score.getX() + r * Math.cos(angle);
-          double cy = score.getY() + r * Math.sin(angle);
+          double cx = score.x() + r * Math.cos(angle);
+          double cy = score.y() + r * Math.sin(angle);
           boolean committedAtEveryHeading = true;
           for (double h = 0; h < 2 * Math.PI && committedAtEveryHeading; h += Math.PI / 8) {
             committedAtEveryHeading =
@@ -390,8 +390,8 @@ public class MathSafetyTest {
 
       // A robot already committed is told to stay where it is.
       EndgameSpot stay = sentinel.nearestEndgameSpot(parked, margin);
-      assertEquals(parked.getX(), stay.pose().getX(), 1e-9);
-      assertEquals(parked.getY(), stay.pose().getY(), 1e-9);
+      assertEquals(parked.x(), stay.pose().x(), 1e-9);
+      assertEquals(parked.y(), stay.pose().y(), 1e-9);
     }
   }
 
@@ -612,18 +612,17 @@ public class MathSafetyTest {
 
     Pose atLimit = CalibrationRay.waypoint(gx, gy, maxDistance);
     assertTrue(
-        "ray must not leave the box in x", atLimit.getX() <= CalibrationRay.MAX_TARGET_X + 1e-6);
+        "ray must not leave the box in x", atLimit.x() <= CalibrationRay.MAX_TARGET_X + 1e-6);
     assertTrue(
-        "ray must not leave the box in y", atLimit.getY() >= CalibrationRay.MIN_TARGET_Y - 1e-6);
+        "ray must not leave the box in y", atLimit.y() >= CalibrationRay.MIN_TARGET_Y - 1e-6);
 
     for (double distance : new double[] {40.0, 72.0, 120.0}) {
       Pose waypoint = CalibrationRay.waypoint(gx, gy, distance);
       // The waypoint sits exactly `distance` from the goal...
-      assertEquals(distance, Math.hypot(gx - waypoint.getX(), gy - waypoint.getY()), 1e-6);
+      assertEquals(distance, Math.hypot(gx - waypoint.x(), gy - waypoint.y()), 1e-6);
       // ...and points straight back at it, which is what makes the turret's job the same at every
       // endpoint and the recorded distance the only thing that varies.
-      assertEquals(
-          Math.atan2(gy - waypoint.getY(), gx - waypoint.getX()), waypoint.getHeading(), 1e-9);
+      assertEquals(Math.atan2(gy - waypoint.y(), gx - waypoint.x()), waypoint.heading(), 1e-9);
     }
   }
 
@@ -715,7 +714,7 @@ public class MathSafetyTest {
     for (Object[] which : new Object[][] {{"normal", normal.score}, {"opposite", opposite.score}}) {
       Pose score = (Pose) which[1];
       double distance =
-          Math.hypot(Field.getBlueGoalX() - score.getX(), Field.getBlueGoalY() - score.getY());
+          Math.hypot(Field.getBlueGoalX() - score.x(), Field.getBlueGoalY() - score.y());
       double rpm = shotTable.lookup(distance).rpm();
       assertTrue(
           String.format(
@@ -783,7 +782,7 @@ public class MathSafetyTest {
     // Goal 90 deg to the robot's left. The bearing comes from the raw goal position, matching what
     // TeleOp publishes via Turret.alignPose -- no velocity lead, so a stationary robot and a
     // moving one at the same place get the same target.
-    double goalBearing = Turret.alignPose(pose.getX(), pose.getY(), 72, 100).getHeading();
+    double goalBearing = Turret.alignPose(pose.x(), pose.y(), 72, 100).heading();
     assertEquals(Math.PI / 2, goalBearing, 1e-6);
 
     casablanca.setGoalHeadingLock(goalBearing, true);
@@ -1167,18 +1166,25 @@ public class MathSafetyTest {
     Sentinel sentinel = new Sentinel(Alliance.RED);
     new Casablanca(sentinel); // Directly runs performBrakingSanityCheck()
 
-    com.pedropathing.control.PredictiveBrakingController controller =
-        new com.pedropathing.control.PredictiveBrakingController(
-            org.firstinspires
-                .ftc
-                .teamcode
-                .pedroPathing
-                .Constants
-                .followerConstants
-                .predictiveBrakingCoefficients);
+    org.firstinspires.ftc.teamcode.utilities.legacy.PredictiveBrakingController controller =
+        new org.firstinspires.ftc.teamcode.utilities.legacy.PredictiveBrakingController(
+            org.firstinspires.ftc.teamcode.pedroPathing.LegacyPedro2Calibration
+                .brakingCoefficients());
 
-    double maxVelX = org.firstinspires.ftc.teamcode.pedroPathing.Constants.driveConstants.xVelocity;
-    double maxVelY = org.firstinspires.ftc.teamcode.pedroPathing.Constants.driveConstants.yVelocity;
+    double maxVelX =
+        org.firstinspires
+            .ftc
+            .teamcode
+            .pedroPathing
+            .LegacyPedro2Calibration
+            .MAX_FORWARD_VELOCITY_INCHES_PER_SECOND;
+    double maxVelY =
+        org.firstinspires
+            .ftc
+            .teamcode
+            .pedroPathing
+            .LegacyPedro2Calibration
+            .MAX_STRAFE_VELOCITY_INCHES_PER_SECOND;
 
     double minBrakingX =
         Math.abs(controller.computeBrakingDisplacement(maxVelX, 1.0))
@@ -1219,7 +1225,7 @@ public class MathSafetyTest {
             turret,
             mockIntake,
             () -> nonZeroHeadingPose,
-            () -> new Pose(0, 0, 0),
+            () -> com.pedropathing.math.Velocity.zero(),
             null,
             Alliance.BLUE,
             mockTelemetry);
