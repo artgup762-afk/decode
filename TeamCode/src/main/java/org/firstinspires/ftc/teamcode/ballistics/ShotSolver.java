@@ -18,7 +18,10 @@ public class ShotSolver {
 
     Pose pose = inputs.robotPose();
     Velocity vel = inputs.robotVelocity() != null ? inputs.robotVelocity() : Velocity.zero();
-
+    // Uses Velocity instead of a velocity-shaped Pose; reads vx/vy; updates position accessors.
+    // The migrated code represents position and velocity with different types.Shooting calculations
+    // receive explicitly named velocity components. The shown edits adapt the data representation
+    // rather than redesigning the ballistics equations.
     double rx = pose.x();
     double ry = pose.y();
     double gx = inputs.targetGoalX();

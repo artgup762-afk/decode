@@ -15,7 +15,8 @@ import org.firstinspires.ftc.teamcode.robot.config.generated.config;
 
 @Configurable
 public abstract class AllianceOppositeNew extends AllianceAutoBase<config.OppositeAuto> {
-
+  // Made the same PathChain → Path changes.Opposite-side autonomous uses the same migrated helpers.
+  // Updates that autonomous routine consistently with the regular routine.
   private Path scorePreload;
   private Path grabPickup4, scorePickup4;
   private Path gatePark;
@@ -24,6 +25,10 @@ public abstract class AllianceOppositeNew extends AllianceAutoBase<config.Opposi
     super(alliance, config.OppositeAuto.class, "auto_poses.opposite");
   }
 
+  // Changed path fields and INTAKEANDFOLLOW CHANGED ALL BELOW (...) from PathChain to Path.Your
+  // migrated path
+  // helpers return Path.The regular autonomous routine accepts the new path objects without
+  // old-type mismatches.
   @Override
   protected CommandBuilder buildAuto() {
     double constantPower = Shooter.constantPower();

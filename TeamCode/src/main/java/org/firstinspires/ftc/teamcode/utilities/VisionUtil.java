@@ -68,7 +68,11 @@ public class VisionUtil {
 
     Pose newPose = null;
     for (AprilTagDetection candidate : currentDetections) {
-      if (candidate instanceof AprilTagSingleDetection detection
+      if (candidate instanceof AprilTagSingleDetection detection // What this does: allows your
+          // existing vision code to access single-tag fields only when the detection is the
+          // expected
+          // type and required data is present.Why it matters: it adapts the existing single-tag
+          // workflow; other detection types are skipped rather than automatically supported.
           && detection.metadata != null
           && detection.robotPose != null) {
         if (!detection.metadata.name.contains("Obelisk")) {
@@ -94,7 +98,9 @@ public class VisionUtil {
    */
   public static Pose legacyDetectionToFieldPose(
       double detectedX, double detectedY, double headingRadians) {
-    return new Pose(detectedY, -detectedX, headingRadians);
+    return new Pose(detectedY, -detectedX, headingRadians); // <- Vision conversion became:
+    // What this does: replaces old library helpers with explicit formulas intended to preserve your
+    // previous coordinate conventions.
   }
 
   public void resumeStreaming() {

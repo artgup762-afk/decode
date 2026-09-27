@@ -339,8 +339,11 @@ public class ShotController {
 
   public void periodic() {
     Pose pose = poseSupplier != null ? poseSupplier.get() : null;
-    Velocity vel = velocitySupplier != null ? velocitySupplier.get() : Velocity.zero();
-
+    Velocity vel = velocitySupplier != null ? velocitySupplier.get() : Velocity.zero(); // Uses
+    // Supplier<Velocity>, Velocity.zero(), updated position access, and hold(...).
+    // To match the new solver inputs and follower API.Updates moving-shot inputs and position
+    // holding during shooting. Holding behavior still needs verification.
+    //
     boolean needSolve =
         active
             || checkAlignment

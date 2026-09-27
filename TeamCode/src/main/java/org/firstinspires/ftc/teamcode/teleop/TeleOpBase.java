@@ -28,6 +28,7 @@ import org.firstinspires.ftc.teamcode.utilities.Sentinel;
  * Generic, season-agnostic TeleOp base class. Encapsulates robot initialization, blackboard pose
  * persistence, gamepad binding, telemetry, field drawing, vision updates, and default teleop drive.
  */
+// IMPORTANT BELOW
 public abstract class TeleOpBase extends OpMode {
 
   public static class ButtonTracker {
@@ -121,7 +122,11 @@ public abstract class TeleOpBase extends OpMode {
     operator = gamepad2;
 
     shooter.setShooterPIDFCoefficients();
-
+    // IMPORTANT LINES 130-154
+    // Limits each joystick command to -1 through 1.
+    // Scales down diagonal translation if its combined magnitude exceeds 1.
+    // Converts field-relative movement into robot-relative movement when needed.
+    // Calls follower.manual(...).
     double maxSpeed = config.teleop.max_speed;
     teleOpDriveCommand =
         Command.build()

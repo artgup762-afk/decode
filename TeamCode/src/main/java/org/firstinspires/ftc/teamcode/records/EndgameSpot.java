@@ -12,3 +12,5 @@ import com.pedropathing.math.Pose;
  * @see org.firstinspires.ftc.teamcode.utilities.Sentinel#nearestEndgameSpot
  */
 public record EndgameSpot(Pose pose, boolean insideLaunchZone) {}
+// Updated the Pose import.The pose class moved from geometry to math in your migrated API.
+// Endgame targets use the same pose type as the rest of the migrated code.

@@ -47,7 +47,10 @@ public final class Robot {
             shooter,
             turret,
             intake,
-            follower::pose,
+            follower::pose, // Uses follower::pose and follower::velocity instead of old pose
+            // access and manually constructing velocity as a Pose.To supply the new follower
+            // data directly.Removes conversion code and connects the turret/shot controller
+            // to the new data types.
             follower::velocity,
             casablanca,
             profile.alliance(),

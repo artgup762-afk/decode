@@ -10,7 +10,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.yaml.snakeyaml.Yaml;
-
+//IMPORTANT ALL: these calculations determine where the robot thinks it is and where mirrored targets
+// appear. A mistake could produce incorrect vision corrections or autonomous targets.
 public final class ConfigLoader {
   private static final String RELATIVE_EXTERNAL_PATH = "FIRST/teamcode/config.yaml";
   private static final String CLASSPATH_RESOURCE =

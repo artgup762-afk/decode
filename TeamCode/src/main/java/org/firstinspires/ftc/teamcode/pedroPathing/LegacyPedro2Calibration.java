@@ -22,3 +22,10 @@ public final class LegacyPedro2Calibration {
     return new PredictiveBrakingCoefficients(0.05, 0.05872647384322376, 0.001561731123457261);
   }
 }
+// Added an entirely new class. Added two maximum-velocity constants, headingPidf(),
+// and brakingCoefficients(), using the exact values from your old Constants.java.
+// Did this because Casablanca still needs these values for its existing heading-lock and braking
+// calculations
+// so it keeps those calculations supplied with their previous values while separating them from the
+// new
+// follower configuration. These values are actively used, not merely archived.

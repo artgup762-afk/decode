@@ -12,6 +12,16 @@ import org.firstinspires.ftc.teamcode.robot.config.generated.config;
 import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFCoefficients;
 import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFController;
 
+// IMPORTANAT You added local PIDF, braking, and timer classes, then changed existing code to use
+// them.
+// You also preserved the old heading gains, braking coefficients, and maximum velocities.
+// What this does: keeps the existing shooter, turret, heading-lock, and braking calculations
+// available
+// after removing the old Pedro dependency.
+// Why it matters: upgrading the path follower would otherwise disrupt unrelated mechanisms that
+// used
+// its utility classes. Your team now maintains these local implementations, and their old values do
+// not count as a new Foresight tune.
 public class Turret {
   public static final double OFFSET_CONST = 260.0;
   public static final double LIMIT_CONST = 160.0;

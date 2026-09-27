@@ -11,7 +11,11 @@ public final class PathUtil {
 
   public static Path pline(Pose start, Pose end) {
     return Paths.line(start, end).linear(start, end);
-  }
+  } // What this does: expresses your straight and curved paths through the new path-building API
+
+  // while retaining the intended heading interpolation. Why it matters: these objects define
+  // autonomous movement. Shorter construction code does not establish identical driving or
+  // completion behavior, so paths need testing.-return Paths.line(start, end).linear(start, end);
 
   public static Path pline(Pose start, Pose end, double headingEndTime) {
     return Paths.line(start, end).linear(start, end, headingEndTime);

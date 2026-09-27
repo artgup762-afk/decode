@@ -14,7 +14,9 @@ import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFCoefficients;
 import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFController;
 
 @Configurable
-public class Shooter {
+public class Shooter { // Switched to local legacy PIDF classes.The shooter relied on the old Pedro
+  // control utilities.Retains a local implementation of those control calculations instead
+  // of forcing the shooter to adopt the new follower controller.
 
   private final DcMotorEx shooter1;
   private final DcMotorEx shooter2;

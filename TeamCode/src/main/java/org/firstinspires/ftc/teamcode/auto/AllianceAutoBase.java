@@ -32,6 +32,11 @@ import org.firstinspires.ftc.teamcode.utilities.Sentinel;
  * Generic, season-agnostic autonomous base class encapsulating alliance state, hardware lifecycle,
  * dashboard field updates, telemetry, generic config binding, and shared commands.
  */
+// Updated pose access, initial pose, stop/manual commands, and distance methods.
+// Replaced a zero-velocity Pose with Velocity.zero().The autonomous base depends
+// on the follower API and supplies inputs to shooting calculations.Keeps
+// initialization, telemetry, pose saving, endgame movement, stopping, and shot
+// preparation connected to the new interfaces.
 public abstract class AllianceAutoBase<T> extends OpMode {
 
   protected final Alliance alliance;

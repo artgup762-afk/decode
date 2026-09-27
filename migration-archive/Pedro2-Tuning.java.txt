@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
-
+// Added. Stores the old tuning source outside the Android source tree.
+//To retain the old implementation without compiling it against the new dependencies.
+//You can refer back to it, but its OpModes are not available as executable tuning code.
 import static com.pedropathing.math.MathFunctions.quadraticFit;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.changes;
 import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.drawCurrent;

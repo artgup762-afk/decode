@@ -16,7 +16,10 @@ import org.firstinspires.ftc.teamcode.robot.config.generated.config;
 
 @Configurable
 public abstract class AllianceAutoNew extends AllianceAutoBase<config.NormalAuto> {
-
+  // Changed path fields and INTAKEANDFOLLOW CHANGED ALL BELOW (...) from PathChain to Path.Your
+  // migrated path
+  // helpers return Path.The regular autonomous routine accepts the new path objects without
+  // old-type mismatches.
   private Path scorePreload;
   private Path grabPickup1, scorePickup1;
   private Path drinkPickupStart, drinkPickupScore;
