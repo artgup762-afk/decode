@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.ballistics;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
+import com.pedropathing.math.Velocity;
 import java.util.Locale;
 import org.firstinspires.ftc.teamcode.records.BallisticsParameters;
 import org.firstinspires.ftc.teamcode.records.ShotInputs;
@@ -16,15 +17,18 @@ public class ShotSolver {
     }
 
     Pose pose = inputs.robotPose();
-    Pose vel = inputs.robotVelocity() != null ? inputs.robotVelocity() : new Pose(0, 0, 0);
-
-    double rx = pose.getX();
-    double ry = pose.getY();
+    Velocity vel = inputs.robotVelocity() != null ? inputs.robotVelocity() : Velocity.zero();
+    // Uses Velocity instead of a velocity-shaped Pose; reads vx/vy; updates position accessors.
+    // The migrated code represents position and velocity with different types.Shooting calculations
+    // receive explicitly named velocity components. The shown edits adapt the data representation
+    // rather than redesigning the ballistics equations.
+    double rx = pose.x();
+    double ry = pose.y();
     double gx = inputs.targetGoalX();
     double gy = inputs.targetGoalY();
 
-    double vx = vel.getX();
-    double vy = vel.getY();
+    double vx = vel.vx;
+    double vy = vel.vy;
     double robotSpeed = Math.hypot(vx, vy);
 
     if (robotSpeed > params.maxMovingSpeedIps()) {

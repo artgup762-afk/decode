@@ -18,5 +18,5 @@ repositories {
 
 dependencies {
     implementation 'org.yaml:snakeyaml:2.6'
-    implementation 'com.pedropathing:ftc:2.1.2'
+    implementation 'com.pedropathing:revhub:3.0.0' // IMPORTANT The configuration compiler also uses Pedro types and needed to target the migrated library. The compiler module can use the new types instead of depending on the old Pedro package.
 }

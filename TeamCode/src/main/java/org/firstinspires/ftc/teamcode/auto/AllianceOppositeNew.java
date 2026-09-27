@@ -8,22 +8,27 @@ import static org.firstinspires.ftc.teamcode.auto.PathUtil.pline;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.ivy.CommandBuilder;
-import com.pedropathing.paths.PathChain;
+import com.pedropathing.paths.Path;
 import org.firstinspires.ftc.teamcode.records.Alliance;
 import org.firstinspires.ftc.teamcode.robot.Shooter;
 import org.firstinspires.ftc.teamcode.robot.config.generated.config;
 
 @Configurable
 public abstract class AllianceOppositeNew extends AllianceAutoBase<config.OppositeAuto> {
-
-  private PathChain scorePreload;
-  private PathChain grabPickup4, scorePickup4;
-  private PathChain gatePark;
+  // Made the same PathChain → Path changes.Opposite-side autonomous uses the same migrated helpers.
+  // Updates that autonomous routine consistently with the regular routine.
+  private Path scorePreload;
+  private Path grabPickup4, scorePickup4;
+  private Path gatePark;
 
   protected AllianceOppositeNew(Alliance alliance) {
     super(alliance, config.OppositeAuto.class, "auto_poses.opposite");
   }
 
+  // Changed path fields and INTAKEANDFOLLOW CHANGED ALL BELOW (...) from PathChain to Path.Your
+  // migrated path
+  // helpers return Path.The regular autonomous routine accepts the new path objects without
+  // old-type mismatches.
   @Override
   protected CommandBuilder buildAuto() {
     double constantPower = Shooter.constantPower();
@@ -67,7 +72,7 @@ public abstract class AllianceOppositeNew extends AllianceAutoBase<config.Opposi
             }));
   }
 
-  protected CommandBuilder intakeAndFollow(PathChain path) {
+  protected CommandBuilder intakeAndFollow(Path path) {
     return sequential(
         instant(
             () -> {

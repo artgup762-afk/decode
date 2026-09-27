@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode.records;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 
+// Updated the Pose import.Match profiles hold poses used by other modules.Keeps profile positions
+// compatible with the migrated follower and commands.
 public record MatchProfile(
     Alliance alliance,
     double goalX,

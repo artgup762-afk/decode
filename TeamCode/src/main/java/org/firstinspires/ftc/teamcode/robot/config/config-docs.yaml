@@ -529,3 +529,16 @@ manual_rev_power:
   desc: "Target flywheel power ratio (0.0 to 1.0) for manual rev command in TeleOp."
   min: 0.0
   max: 1.0
+
+linear_coefficient:
+  desc: "Casablanca stopping distance coefficient multiplying absolute velocity (seconds). Preserves the measured safety model independently of Foresight."
+  min: 0.0
+quadratic_coefficient:
+  desc: "Casablanca stopping distance coefficient multiplying velocity squared (seconds squared per inch)."
+  min: 0.0
+forward_speed:
+  desc: "Measured maximum forward velocity in inches per second for Casablanca braking diagnostics."
+  min: 0.0
+strafe_speed:
+  desc: "Measured maximum strafe velocity in inches per second for Casablanca braking diagnostics."
+  min: 0.0

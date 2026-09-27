@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -151,9 +151,8 @@ public class TurretLoopDiagnosticTest {
   }
 
   /**
-   * Guards the live-tuner bug: {@code PIDFController.run()} re-reads its gains from the supplier it
-   * was constructed with, so handing it a brand new coefficients object had no effect and the
-   * turret kept driving on the gains baked in at construction even with every dashboard gain at 0.
+   * Guards live tuning: gain changes must reach the active Pedro 3 controller and feedforward,
+   * rather than leaving the turret driving on gains captured at construction.
    */
   @Test
   public void zeroedGainsFromTheLiveTunerStopTheTurret() throws InterruptedException {

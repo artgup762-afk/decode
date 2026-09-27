@@ -1,8 +1,7 @@
 package org.firstinspires.ftc.teamcode.robot;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.control.PIDFCoefficients;
-import com.pedropathing.control.PIDFController;
+import com.pedropathing.controllers.PIDController;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -20,8 +19,7 @@ public class Shooter {
   private final DcMotorEx shooter2;
   private final Servo hood;
   private final VoltageSensor voltageSensor;
-  private final PIDFController pidfController;
-  private final PIDFCoefficients coefficients;
+  private final PIDController pidfController;
   private final AntiWindupIntegrator integrator = new AntiWindupIntegrator();
   private final ElapsedTime loopTimer = new ElapsedTime();
   private final ElapsedTime voltageTimer = new ElapsedTime();
@@ -61,10 +59,8 @@ public class Shooter {
     shooter2.setMode(initialMode);
     shooter2.setDirection(DcMotorSimple.Direction.REVERSE);
 
-    coefficients =
-        new PIDFCoefficients(
-            config.shooter.pidf.p, 0.0, config.shooter.pidf.d, config.shooter.pidf.f);
-    pidfController = new PIDFController(coefficients);
+    // The separate anti-windup integrator owns I; feedforward is applied in periodic().
+    pidfController = new PIDController(config.shooter.pidf.p, 0.0, config.shooter.pidf.d);
 
     setShooterPIDFCoefficients();
 
@@ -73,8 +69,9 @@ public class Shooter {
   }
 
   public final void setShooterPIDFCoefficients() {
-    coefficients.setCoefficients(
-        config.shooter.pidf.p, 0.0, config.shooter.pidf.d, config.shooter.pidf.f);
+    pidfController.kP = config.shooter.pidf.p;
+    pidfController.kI = 0.0;
+    pidfController.kD = config.shooter.pidf.d;
 
     if (config.shooter.use_ftc_pid) {
       shooter1.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, config.shooter.motor_pidf);
@@ -158,9 +155,7 @@ public class Shooter {
           shooter2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
-        pidfController.setTargetPosition(targetVel);
-        pidfController.updatePosition(currentVel);
-        double pidOutput = pidfController.run();
+        double pidOutput = pidfController.calculate(targetVel, targetVel - currentVel);
 
         double error = targetVel - currentVel;
         double integralTerm =

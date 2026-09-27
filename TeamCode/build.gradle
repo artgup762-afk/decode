@@ -78,7 +78,8 @@ android {
 spotless {
     java {
         target 'src/*/java/**/*.java'
-        googleJavaFormat('1.27.0')
+        // Java 25 (Android Studio's bundled JDK) requires formatter 1.30.0 or newer.
+        googleJavaFormat('1.30.0')
         removeUnusedImports()
     }
 }

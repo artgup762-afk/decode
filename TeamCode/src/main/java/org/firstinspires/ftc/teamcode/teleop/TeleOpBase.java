@@ -4,12 +4,14 @@ import com.bylazar.field.FieldManager;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.Pose;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.ivy.Scheduler;
+import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import java.util.Locale;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.Pedro3DriveCompat;
 import org.firstinspires.ftc.teamcode.records.Alliance;
 import org.firstinspires.ftc.teamcode.records.MatchProfile;
 import org.firstinspires.ftc.teamcode.robot.Intake;
@@ -27,6 +29,7 @@ import org.firstinspires.ftc.teamcode.utilities.Sentinel;
  * Generic, season-agnostic TeleOp base class. Encapsulates robot initialization, blackboard pose
  * persistence, gamepad binding, telemetry, field drawing, vision updates, and default teleop drive.
  */
+// IMPORTANT BELOW
 public abstract class TeleOpBase extends OpMode {
 
   public static class ButtonTracker {
@@ -91,6 +94,10 @@ public abstract class TeleOpBase extends OpMode {
 
   @Override
   public void init() {
+    if (!Constants.isDriveCalibrated()) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     config.reload();
     Alliance alliance = (Alliance) blackboard.get("ALLIANCE");
     if (alliance == null) {
@@ -111,7 +118,7 @@ public abstract class TeleOpBase extends OpMode {
     telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
     Pose savedPose = OpModeUtil.getSavedPose(alliance, profile.startPose());
-    follower.setStartingPose(savedPose);
+    follower.setPose(savedPose);
 
     robot.vision.initAprilTag(hardwareMap, true);
     casablanca.reset();
@@ -120,11 +127,15 @@ public abstract class TeleOpBase extends OpMode {
     operator = gamepad2;
 
     shooter.setShooterPIDFCoefficients();
-
+    // IMPORTANT LINES 130-154
+    // Limits each joystick command to -1 through 1.
+    // Scales down diagonal translation if its combined magnitude exceeds 1.
+    // Converts field-relative movement into robot-relative movement when needed.
+    // Calls follower.manual(...).
     double maxSpeed = config.teleop.max_speed;
     teleOpDriveCommand =
         Command.build()
-            .setStart(() -> follower.startTeleopDrive())
+            .setStart(() -> follower.manual(0.0, 0.0, 0.0))
             .setExecute(
                 () -> {
                   double y = Math.clamp(-Math.pow(driver.left_stick_y, 3), -maxSpeed, maxSpeed);
@@ -133,14 +144,14 @@ public abstract class TeleOpBase extends OpMode {
 
                   double[] adjusted =
                       casablanca.adjustDriveInput(
-                          follower.getPose(),
-                          follower.getVelocity(),
-                          follower.getAngularVelocity(),
+                          follower.pose(),
+                          follower.velocity().toVector2D().toVector(),
+                          follower.velocity().omega,
                           x,
                           y,
                           r,
                           -driver.right_stick_x);
-                  follower.setTeleOpDrive(adjusted[1], adjusted[0], adjusted[2], false);
+                  Pedro3DriveCompat.manual(follower, adjusted[1], adjusted[0], adjusted[2], false);
                 })
             .requiring(follower);
 
@@ -148,8 +159,19 @@ public abstract class TeleOpBase extends OpMode {
   }
 
   @Override
+  public void init_loop() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+    }
+  }
+
+  @Override
   public void start() {
-    follower.startTeleopDrive();
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
+    follower.manual(0.0, 0.0, 0.0);
     OpModeUtil.setupTurretAndShooter(turret, shooter);
     teleOpDriveCommand.schedule();
   }
@@ -174,6 +196,10 @@ public abstract class TeleOpBase extends OpMode {
 
   @Override
   public void loop() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     updateGamepads();
 
     robot.update();
@@ -189,10 +215,10 @@ public abstract class TeleOpBase extends OpMode {
     OpModeUtil.drawRobot(field, follower, turret, profile.goalX(), profile.goalY());
     DrawingUtil.drawCasablancaZones(field, sentinel);
 
-    OpModeUtil.savePose(profile.alliance(), follower.getPose());
+    OpModeUtil.savePose(profile.alliance(), follower.pose());
 
     telemetryM.addData("Alliance", profile.alliance());
-    telemetryM.addData("Pose", follower.getPose());
+    telemetryM.addData("Pose", follower.pose());
     telemetryM.addData("Drive Mode", Casablanca.fieldCentric ? "FIELD-CENTRIC" : "ROBOT-CENTRIC");
     telemetryM.addData(
         "Heading Lock", casablanca.isGoalHeadingLockActive() ? "GOAL (driver X)" : "last heading");
@@ -210,7 +236,9 @@ public abstract class TeleOpBase extends OpMode {
 
   @Override
   public void stop() {
-    robot.shutdown();
+    if (robot != null) {
+      robot.shutdown();
+    }
   }
 
   private void handleVision() {
@@ -224,11 +252,11 @@ public abstract class TeleOpBase extends OpMode {
         follower.setPose(visionPose);
         telemetryM.addLine(
             "Pose updated: X="
-                + String.format(Locale.ROOT, "%.2f", visionPose.getX())
+                + String.format(Locale.ROOT, "%.2f", visionPose.x())
                 + " Y="
-                + String.format(Locale.ROOT, "%.2f", visionPose.getY())
+                + String.format(Locale.ROOT, "%.2f", visionPose.y())
                 + " H="
-                + String.format(Locale.ROOT, "%.2f", Math.toDegrees(visionPose.getHeading())));
+                + String.format(Locale.ROOT, "%.2f", Math.toDegrees(visionPose.heading())));
         robot.vision.stopStreaming();
       } else {
         telemetryM.addData("Vision [On-Demand]", "Searching for Tag...");
