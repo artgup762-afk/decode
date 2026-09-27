@@ -1,26 +1,17 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.controllers.Controller;
+import com.pedropathing.controllers.PIDController;
 import com.pedropathing.math.Pose;
 import com.pedropathing.math.Vector;
 import com.pedropathing.math.Vector2D;
+import com.pedropathing.utils.Timer;
+import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.pedroPathing.LegacyPedro2Calibration;
 import org.firstinspires.ftc.teamcode.robot.config.generated.config;
-import org.firstinspires.ftc.teamcode.utilities.legacy.NanoTimer;
-import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFController;
-import org.firstinspires.ftc.teamcode.utilities.legacy.PredictiveBrakingController;
 import org.locationtech.jts.geom.Envelope;
 
-// IMPORTANT - You added local PIDF, braking, and timer classes, then changed existing code to use
-// \them. You also preserved the old heading gains, braking coefficients, and maximum velocities.
-// What this does: keeps the existing shooter, turret, heading-lock, and braking calculations
-// available
-// after removing the old Pedro dependency.
-// Why it matters: upgrading the path follower would otherwise disrupt unrelated mechanisms that
-// used
-// its utility classes. Your team now maintains these local implementations, and their old values do
-// not count as a new Foresight tune.
 @Configurable
 public class Casablanca {
 
@@ -61,9 +52,10 @@ public class Casablanca {
 
   private double targetHeading = 0.0;
   private boolean headingLockInitialized = false;
-  private final PIDFController headingPidf;
+  private final Controller headingPidf;
+  private final PolynomialFunction brakingDistance;
 
-  private final NanoTimer timer = new NanoTimer();
+  private final Timer timer = new Timer();
   private double currentForward = 0;
   private double currentStrafe = 0;
   private double currentTurn = 0;
@@ -169,22 +161,29 @@ public class Casablanca {
     headingLockErrorDeadbandRad = Math.toRadians(hl.error_deadband_deg);
     headingLockSettleRateRad = Math.toRadians(hl.settle_rate_dps);
 
-    this.headingPidf = new PIDFController(LegacyPedro2Calibration.headingPidf());
+    this.headingPidf =
+        Controller.sum(
+            new PIDController(hl.pidf.p, hl.pidf.i, hl.pidf.d),
+            Controller.staticFeedforward(hl.pidf.f));
+    brakingDistance =
+        new PolynomialFunction(
+            new double[] {0.0, c.braking.linear_coefficient, c.braking.quadratic_coefficient});
 
     performBrakingSanityCheck();
 
     reset();
   }
 
+  /** Stopping-distance magnitude in inches; the same model protects both field axes. */
+  public final double stoppingDistance(double velocity) {
+    return brakingDistance.value(Math.abs(velocity));
+  }
+
   private void performBrakingSanityCheck() {
-    PredictiveBrakingController controller =
-        new PredictiveBrakingController(LegacyPedro2Calibration.brakingCoefficients());
-    double maxVelX = LegacyPedro2Calibration.MAX_FORWARD_VELOCITY_INCHES_PER_SECOND;
-    double maxVelY = LegacyPedro2Calibration.MAX_STRAFE_VELOCITY_INCHES_PER_SECOND;
-    double minBrakingX =
-        Math.abs(controller.computeBrakingDisplacement(maxVelX, 1.0)) / decelSafetyFactor;
-    double minBrakingY =
-        Math.abs(controller.computeBrakingDisplacement(maxVelY, 1.0)) / decelSafetyFactor;
+    double maxVelX = config.casablanca.braking.forward_speed;
+    double maxVelY = config.casablanca.braking.strafe_speed;
+    double minBrakingX = stoppingDistance(maxVelX) / decelSafetyFactor;
+    double minBrakingY = stoppingDistance(maxVelY) / decelSafetyFactor;
 
     com.qualcomm.robotcore.util.RobotLog.ii(
         "Casablanca",
@@ -198,7 +197,7 @@ public class Casablanca {
   }
 
   public final void reset() {
-    timer.resetTimer();
+    timer.reset();
     currentForward = 0;
     currentStrafe = 0;
     currentTurn = 0;
@@ -308,14 +307,12 @@ public class Casablanca {
           headingPidf.reset();
           turn = 0.0;
         } else {
-          headingPidf.updateFeedForwardInput(Math.signum(headingError));
-          headingPidf.updateError(headingError);
-
           double speedMag = currentVelocity.magnitude();
           double speedRatio = Math.clamp(speedMag / headingLockMovingSpeedThreshold, 0.0, 1.0);
           double ks = frictionRot + speedRatio * (headingLockKsMoving - frictionRot);
 
-          double correction = headingPidf.run() + Math.copySign(ks, headingError);
+          double correction =
+              headingPidf.calculate(targetHeading, headingError) + Math.copySign(ks, headingError);
           turn = Math.clamp(correction, -headingLockMaxPower, headingLockMaxPower);
         }
       }
@@ -324,8 +321,8 @@ public class Casablanca {
     }
 
     if (enableInputSmoothing) {
-      double dt = timer.getElapsedTimeSeconds();
-      timer.resetTimer();
+      double dt = timer.seconds();
+      timer.reset();
       if (dt > 0.2) dt = 0.05;
 
       double maxChange = (1.0 / smoothTime) * dt;
@@ -502,10 +499,7 @@ public class Casablanca {
     double physicsScale = 1.0;
     if (Math.abs(currentVel) > 0.2) {
       double brakingRoom = Math.max(0, distToStop - hardStopDist);
-      PredictiveBrakingController controller =
-          new PredictiveBrakingController(LegacyPedro2Calibration.brakingCoefficients());
-      double predictedBrakingDist =
-          Math.abs(controller.computeBrakingDisplacement(currentVel, Math.signum(currentVel)));
+      double predictedBrakingDist = stoppingDistance(currentVel);
 
       predictedBrakingDist /= decelSafetyFactor;
 

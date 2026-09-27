@@ -1164,49 +1164,12 @@ public class MathSafetyTest {
   @Test
   public void testCasablancaPredictiveBrakingSanityCheck() {
     Sentinel sentinel = new Sentinel(Alliance.RED);
-    new Casablanca(sentinel); // Directly runs performBrakingSanityCheck()
-
-    org.firstinspires.ftc.teamcode.utilities.legacy.PredictiveBrakingController controller =
-        new org.firstinspires.ftc.teamcode.utilities.legacy.PredictiveBrakingController(
-            org.firstinspires.ftc.teamcode.pedroPathing.LegacyPedro2Calibration
-                .brakingCoefficients());
-
-    double maxVelX =
-        org.firstinspires
-            .ftc
-            .teamcode
-            .pedroPathing
-            .LegacyPedro2Calibration
-            .MAX_FORWARD_VELOCITY_INCHES_PER_SECOND;
-    double maxVelY =
-        org.firstinspires
-            .ftc
-            .teamcode
-            .pedroPathing
-            .LegacyPedro2Calibration
-            .MAX_STRAFE_VELOCITY_INCHES_PER_SECOND;
-
-    double minBrakingX =
-        Math.abs(controller.computeBrakingDisplacement(maxVelX, 1.0))
-            / Casablanca.decelSafetyFactor;
-    double minBrakingY =
-        Math.abs(controller.computeBrakingDisplacement(maxVelY, 1.0))
-            / Casablanca.decelSafetyFactor;
-
-    // Verify calculated physics stopping distances are strictly positive and dynamically match
-    // physics formula
-    assertTrue(minBrakingX > 0.0);
-    assertTrue(minBrakingY > 0.0);
-    assertEquals(
-        minBrakingX,
-        Math.abs(controller.computeBrakingDisplacement(maxVelX, 1.0))
-            / Casablanca.decelSafetyFactor,
-        1e-6);
-    assertEquals(
-        minBrakingY,
-        Math.abs(controller.computeBrakingDisplacement(maxVelY, 1.0))
-            / Casablanca.decelSafetyFactor,
-        1e-6);
+    Casablanca casablanca = new Casablanca(sentinel);
+    assertEquals(0.0, casablanca.stoppingDistance(0.0), 0.0);
+    // Independent reference values from the previously measured braking curve.
+    assertEquals(6.8406515008043405, casablanca.stoppingDistance(50.0), 1e-9);
+    assertEquals(casablanca.stoppingDistance(50.0), casablanca.stoppingDistance(-50.0), 0.0);
+    assertTrue(casablanca.stoppingDistance(75.0) > casablanca.stoppingDistance(50.0));
   }
 
   @Test

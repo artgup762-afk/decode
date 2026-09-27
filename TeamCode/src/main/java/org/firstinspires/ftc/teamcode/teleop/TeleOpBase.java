@@ -10,6 +10,7 @@ import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import java.util.Locale;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.pedroPathing.Pedro3DriveCompat;
 import org.firstinspires.ftc.teamcode.records.Alliance;
 import org.firstinspires.ftc.teamcode.records.MatchProfile;
@@ -93,6 +94,10 @@ public abstract class TeleOpBase extends OpMode {
 
   @Override
   public void init() {
+    if (!Constants.isDriveCalibrated()) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     config.reload();
     Alliance alliance = (Alliance) blackboard.get("ALLIANCE");
     if (alliance == null) {
@@ -154,7 +159,18 @@ public abstract class TeleOpBase extends OpMode {
   }
 
   @Override
+  public void init_loop() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+    }
+  }
+
+  @Override
   public void start() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     follower.manual(0.0, 0.0, 0.0);
     OpModeUtil.setupTurretAndShooter(turret, shooter);
     teleOpDriveCommand.schedule();
@@ -180,6 +196,10 @@ public abstract class TeleOpBase extends OpMode {
 
   @Override
   public void loop() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     updateGamepads();
 
     robot.update();
@@ -216,7 +236,9 @@ public abstract class TeleOpBase extends OpMode {
 
   @Override
   public void stop() {
-    robot.shutdown();
+    if (robot != null) {
+      robot.shutdown();
+    }
   }
 
   private void handleVision() {

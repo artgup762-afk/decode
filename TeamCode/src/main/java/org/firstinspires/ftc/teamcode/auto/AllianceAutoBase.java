@@ -15,6 +15,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import java.util.Locale;
 import org.firstinspires.ftc.teamcode.config.ConfigLoader;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.records.Alliance;
 import org.firstinspires.ftc.teamcode.records.EndgameSpot;
 import org.firstinspires.ftc.teamcode.records.Field;
@@ -119,6 +120,10 @@ public abstract class AllianceAutoBase<T> extends OpMode {
 
   @Override
   public void init() {
+    if (!Constants.isDriveCalibrated()) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     org.firstinspires.ftc.teamcode.robot.config.generated.config.reload();
     String allianceStr = alliance == Alliance.RED ? "red" : "blue";
     this.config = ConfigLoader.loadMerged(configClass, posePrefix + "." + allianceStr, "auto");
@@ -147,7 +152,18 @@ public abstract class AllianceAutoBase<T> extends OpMode {
   }
 
   @Override
+  public void init_loop() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+    }
+  }
+
+  @Override
   public void start() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     evacuating = false;
     frozen = false;
     shootingOut = false;
@@ -159,6 +175,10 @@ public abstract class AllianceAutoBase<T> extends OpMode {
 
   @Override
   public void loop() {
+    if (robot == null) {
+      Constants.reportCalibrationRequired(telemetry);
+      return;
+    }
     updateEndgame();
     robot.update();
 
@@ -301,6 +321,8 @@ public abstract class AllianceAutoBase<T> extends OpMode {
 
   @Override
   public void stop() {
-    robot.shutdown();
+    if (robot != null) {
+      robot.shutdown();
+    }
   }
 }

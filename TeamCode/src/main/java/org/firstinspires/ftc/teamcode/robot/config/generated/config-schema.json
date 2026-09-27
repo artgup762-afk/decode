@@ -659,6 +659,69 @@
     "casablanca": {
       "type": "object",
       "properties": {
+        "braking": {
+          "type": "object",
+          "properties": {
+            "linear_coefficient": {
+              "description": "Casablanca stopping distance coefficient multiplying absolute velocity (seconds). Preserves the measured safety model independently of Foresight.",
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                }
+              ]
+            },
+            "quadratic_coefficient": {
+              "description": "Casablanca stopping distance coefficient multiplying velocity squared (seconds squared per inch).",
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                }
+              ]
+            },
+            "forward_speed": {
+              "description": "Measured maximum forward velocity in inches per second for Casablanca braking diagnostics.",
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                }
+              ]
+            },
+            "strafe_speed": {
+              "description": "Measured maximum strafe velocity in inches per second for Casablanca braking diagnostics.",
+              "oneOf": [
+                {
+                  "type": "number",
+                  "minimum": 0.0
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                }
+              ]
+            }
+          },
+          "required": [
+            "linear_coefficient",
+            "quadratic_coefficient",
+            "forward_speed",
+            "strafe_speed"
+          ]
+        },
         "enable_depth_protection": {
           "description": "Enable/disable depth (X-axis) goal zone proximity protection. Safety policy parameter; leave true outside of debugging.",
           "type": "boolean"
@@ -873,6 +936,61 @@
         "heading_lock": {
           "type": "object",
           "properties": {
+            "pidf": {
+              "type": "object",
+              "properties": {
+                "p": {
+                  "oneOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                    }
+                  ]
+                },
+                "i": {
+                  "oneOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                    }
+                  ]
+                },
+                "d": {
+                  "oneOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                    }
+                  ]
+                },
+                "f": {
+                  "oneOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^(?i)(m|k|mirror|key)?\\s*[+\\-*/]?\\s*\\d*(\\.\\d+)?$"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "p",
+                "i",
+                "d",
+                "f"
+              ]
+            },
             "enabled": {
               "description": "Enable/disable this subsystem, controller, watchdog, or feature.",
               "type": "boolean"
@@ -960,6 +1078,7 @@
             }
           },
           "required": [
+            "pidf",
             "enabled",
             "intent_threshold",
             "ks_moving",
@@ -971,6 +1090,7 @@
         }
       },
       "required": [
+        "braking",
         "enable_depth_protection",
         "enable_side_protection",
         "repulsion",

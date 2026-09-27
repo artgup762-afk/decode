@@ -63,6 +63,10 @@ public final class config {
   public static double SENTINEL_GOALS_RED_GOAL_Y;
   public static double SENTINEL_GOALS_BLUE_GOAL_X;
   public static double SENTINEL_GOALS_BLUE_GOAL_Y;
+  public static double CASABLANCA_BRAKING_LINEAR_COEFFICIENT;
+  public static double CASABLANCA_BRAKING_QUADRATIC_COEFFICIENT;
+  public static double CASABLANCA_BRAKING_FORWARD_SPEED;
+  public static double CASABLANCA_BRAKING_STRAFE_SPEED;
   public static boolean CASABLANCA_ENABLE_DEPTH_PROTECTION;
   public static boolean CASABLANCA_ENABLE_SIDE_PROTECTION;
   public static double CASABLANCA_REPULSION_POWER;
@@ -77,6 +81,10 @@ public final class config {
   public static double CASABLANCA_FRICTION_ROT;
   public static double CASABLANCA_SMOOTHING_TIME;
   public static double CASABLANCA_SMOOTHING_BACK_LIFT_MULTIPLIER;
+  public static double CASABLANCA_HEADING_LOCK_PIDF_P;
+  public static double CASABLANCA_HEADING_LOCK_PIDF_I;
+  public static double CASABLANCA_HEADING_LOCK_PIDF_D;
+  public static double CASABLANCA_HEADING_LOCK_PIDF_F;
   public static boolean CASABLANCA_HEADING_LOCK_ENABLED;
   public static double CASABLANCA_HEADING_LOCK_INTENT_THRESHOLD;
   public static double CASABLANCA_HEADING_LOCK_KS_MOVING;
@@ -220,6 +228,10 @@ public final class config {
     SENTINEL_GOALS_RED_GOAL_Y = sentinel.goals.red_goal_y;
     SENTINEL_GOALS_BLUE_GOAL_X = sentinel.goals.blue_goal_x;
     SENTINEL_GOALS_BLUE_GOAL_Y = sentinel.goals.blue_goal_y;
+    CASABLANCA_BRAKING_LINEAR_COEFFICIENT = casablanca.braking.linear_coefficient;
+    CASABLANCA_BRAKING_QUADRATIC_COEFFICIENT = casablanca.braking.quadratic_coefficient;
+    CASABLANCA_BRAKING_FORWARD_SPEED = casablanca.braking.forward_speed;
+    CASABLANCA_BRAKING_STRAFE_SPEED = casablanca.braking.strafe_speed;
     CASABLANCA_ENABLE_DEPTH_PROTECTION = casablanca.enable_depth_protection;
     CASABLANCA_ENABLE_SIDE_PROTECTION = casablanca.enable_side_protection;
     CASABLANCA_REPULSION_POWER = casablanca.repulsion.power;
@@ -234,6 +246,10 @@ public final class config {
     CASABLANCA_FRICTION_ROT = casablanca.friction.rot;
     CASABLANCA_SMOOTHING_TIME = casablanca.smoothing.time;
     CASABLANCA_SMOOTHING_BACK_LIFT_MULTIPLIER = casablanca.smoothing.back_lift_multiplier;
+    CASABLANCA_HEADING_LOCK_PIDF_P = casablanca.heading_lock.pidf.p;
+    CASABLANCA_HEADING_LOCK_PIDF_I = casablanca.heading_lock.pidf.i;
+    CASABLANCA_HEADING_LOCK_PIDF_D = casablanca.heading_lock.pidf.d;
+    CASABLANCA_HEADING_LOCK_PIDF_F = casablanca.heading_lock.pidf.f;
     CASABLANCA_HEADING_LOCK_ENABLED = casablanca.heading_lock.enabled;
     CASABLANCA_HEADING_LOCK_INTENT_THRESHOLD = casablanca.heading_lock.intent_threshold;
     CASABLANCA_HEADING_LOCK_KS_MOVING = casablanca.heading_lock.ks_moving;
@@ -554,6 +570,34 @@ public final class config {
   }
 
   public static final class Casablanca {
+    public static final class Braking {
+      /**
+       * Casablanca stopping distance coefficient multiplying absolute velocity (seconds). Preserves
+       * the measured safety model independently of Foresight. Minimum: 0.0
+       */
+      public double linear_coefficient;
+
+      /**
+       * Casablanca stopping distance coefficient multiplying velocity squared (seconds squared per
+       * inch). Minimum: 0.0
+       */
+      public double quadratic_coefficient;
+
+      /**
+       * Measured maximum forward velocity in inches per second for Casablanca braking diagnostics.
+       * Minimum: 0.0
+       */
+      public double forward_speed;
+
+      /**
+       * Measured maximum strafe velocity in inches per second for Casablanca braking diagnostics.
+       * Minimum: 0.0
+       */
+      public double strafe_speed;
+    }
+
+    public Braking braking;
+
     /**
      * Enable/disable depth (X-axis) goal zone proximity protection. Safety policy parameter; leave
      * true outside of debugging.
@@ -654,6 +698,8 @@ public final class config {
     public Smoothing smoothing;
 
     public static final class HeadingLock {
+      public com.qualcomm.robotcore.hardware.PIDFCoefficients pidf;
+
       /** Enable/disable this subsystem, controller, watchdog, or feature. */
       public boolean enabled;
 

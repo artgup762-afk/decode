@@ -61,6 +61,12 @@ sentinel:
     blue_goal_y: 135
 
 casablanca:
+  # Existing measured safety model retained independently of Foresight calibration.
+  braking:
+    linear_coefficient: 0.05872647384322376
+    quadratic_coefficient: 0.001561731123457261
+    forward_speed: 75.64281986
+    strafe_speed: 58.9247686
   enable_depth_protection: true
   enable_side_protection: true
   repulsion:
@@ -81,6 +87,11 @@ casablanca:
     time: 0.22
     back_lift_multiplier: 2.5
   heading_lock:
+    pidf:
+      p: 0.7
+      i: 0.0
+      d: 0.002
+      f: 0.02
     enabled: true
     intent_threshold: 0.05
     ks_moving: 0.0003

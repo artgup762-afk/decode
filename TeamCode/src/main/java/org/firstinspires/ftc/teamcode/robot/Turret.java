@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.robot;
 
+import com.pedropathing.controllers.Controller;
+import com.pedropathing.controllers.PIDController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -9,19 +11,7 @@ import java.util.Locale;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.robot.config.generated.config;
-import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFCoefficients;
-import org.firstinspires.ftc.teamcode.utilities.legacy.PIDFController;
 
-// IMPORTANAT You added local PIDF, braking, and timer classes, then changed existing code to use
-// them.
-// You also preserved the old heading gains, braking coefficients, and maximum velocities.
-// What this does: keeps the existing shooter, turret, heading-lock, and braking calculations
-// available
-// after removing the old Pedro dependency.
-// Why it matters: upgrading the path follower would otherwise disrupt unrelated mechanisms that
-// used
-// its utility classes. Your team now maintains these local implementations, and their old values do
-// not count as a new Foresight tune.
 public class Turret {
   public static final double OFFSET_CONST = 260.0;
   public static final double LIMIT_CONST = 160.0;
@@ -39,8 +29,8 @@ public class Turret {
   private final AnalogInput turnAnalog;
   private final Telemetry telemetry;
 
-  private final PIDFCoefficients pidfCoefficients;
-  private final PIDFController pidfController;
+  private final PIDController pidfController;
+  private final Controller pidFeedforward = Controller.staticFeedforward(() -> f);
 
   private double targetTurnAngle = 0;
   private boolean isTurnDone = false;
@@ -84,8 +74,7 @@ public class Turret {
 
     reloadFromConfig();
 
-    pidfCoefficients = new PIDFCoefficients(p, i, d, f);
-    pidfController = new PIDFController(pidfCoefficients);
+    pidfController = new PIDController(p, i, d);
 
     if (config.turret != null && config.turret.analog_encoder != null) {
       this.zeroVoltageOffset = config.turret.analog_encoder.zero_voltage;
@@ -104,8 +93,8 @@ public class Turret {
       this.ksNegative = config.turret.ks_negative;
       this.maxPower = config.turret.max_power_output;
     }
-    // Null during the constructor's own call, before the coefficients exist.
-    if (pidfCoefficients != null) {
+    // Null during the constructor's own call, before the controller exists.
+    if (pidfController != null) {
       applyPIDFCoefficients();
     }
   }
@@ -156,7 +145,9 @@ public class Turret {
   }
 
   private void applyPIDFCoefficients() {
-    pidfCoefficients.setCoefficients(p, i, d, f);
+    pidfController.kP = p;
+    pidfController.kI = i;
+    pidfController.kD = d;
   }
 
   private double zeroVoltageOffset = 0.0;
@@ -491,10 +482,9 @@ public class Turret {
     }
 
     applyPIDFCoefficients();
-    pidfController.setTargetPosition(relativeTargetAngle);
-    pidfController.updatePosition(relativeTurretAngle);
-    pidfController.updateFeedForwardInput(Math.signum(error));
-    double pidOutput = pidfController.run();
+    double pidOutput =
+        pidfController.calculate(relativeTargetAngle, error)
+            + pidFeedforward.calculate(relativeTargetAngle, error);
     double command = Math.clamp(pidOutput + feedforward, -maxPower, maxPower);
 
     updateRunawayWatchdog(relativeTargetAngle, error, command);

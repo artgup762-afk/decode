@@ -2,8 +2,9 @@
 
 The tuning procedures are installed in `pedroPathing/Tuning.java`. They appear in
 Pedro AutoTune's web interface, rather than as four ordinary Driver Station OpModes.
-The existing match TeleOp/autonomous remain blocked until measured Foresight results
-are installed. Do not replace `foresightConfig = null` with arbitrary example gains.
+The existing match TeleOp/autonomous display a DRIVE DISABLED calibration message
+and stay inactive until measured Foresight results are installed. Their init, start,
+loop, and stop callbacks can be used without an initialization exception. Do not replace `foresightConfig = null` with arbitrary example gains.
 
 ## 1. Install the tuning build
 
